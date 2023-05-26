@@ -1,5 +1,4 @@
 import json
-from re import A
 
 import pytest
 from flask import Flask
@@ -11,8 +10,21 @@ from extensions.database import db
 from models import Student
 
 base_students = [
-    Student(id=1, name="Test1", age=2),
-    Student(id=2, name="Test2", age=3),
+    Student(
+        id=1,
+        email="email1@gmail.com",
+        first_name="name1",
+        last_name="lastname1",
+        gender="MALE",
+    ),
+    Student(
+        id=2,
+        email="email2@gmail.com",
+        first_name="name2",
+        last_name="lastname2",
+        gender="FEMALE",
+        time_spent_in_books=12031345235,
+    ),
 ]
 
 
@@ -33,24 +45,24 @@ def test_get_all_students(client: FlaskClient):
     assert data == expected_data
 
 
-def test_get_all_students_age_filter(client: FlaskClient):
+def test_get_all_students_last_name_filter(client: FlaskClient):
     expected_data = marshal(
-        list(filter(lambda s: s.age == 3, base_students)), student_model
+        list(filter(lambda s: s.last_name == "lastname1", base_students)), student_model
     )
 
-    response = client.get("/students", query_string="age=3")
+    response = client.get("/students", query_string="last_name=lastname1")
     data = json.loads(response.data)
 
     assert response.status_code == 200
     assert data == expected_data
 
 
-def test_get_all_students_name_filter(client: FlaskClient):
+def test_get_all_students_gender_filter(client: FlaskClient):
     expected_data = marshal(
-        list(filter(lambda s: s.name == "Test1", base_students)), student_model
+        list(filter(lambda s: s.gender == "FEMALE", base_students)), student_model
     )
 
-    response = client.get("/students", query_string="name=Test1")
+    response = client.get("/students", query_string="gender=FEMALE")
     data = json.loads(response.data)
 
     assert response.status_code == 200
@@ -58,7 +70,13 @@ def test_get_all_students_name_filter(client: FlaskClient):
 
 
 def test_add_student(client: FlaskClient):
-    new_student = Student(name="Test3", age=4)
+    new_student = Student(
+        email="email3@gmail.com",
+        first_name="name3",
+        last_name="lastname3",
+        gender="MALE",
+        time_spent_in_books=141234,
+    )
 
     response = client.post(
         "/students",
@@ -67,14 +85,21 @@ def test_add_student(client: FlaskClient):
     data = json.loads(response.data)
 
     assert response.status_code == 201
-    assert data["name"] == new_student.name
-    assert data["age"] == new_student.age
+    assert data["email"] == new_student.email
+    assert data["first_name"] == new_student.first_name
+    assert data["last_name"] == new_student.last_name
+    assert data["gender"] == new_student.gender
+    assert data["time_spent_in_books"] == new_student.time_spent_in_books
 
 
 def test_update_student(client: FlaskClient):
     old_student_data = json.loads(client.get("/students/1").data)
     updated_student = Student(
-        name=old_student_data["name"], age=old_student_data["age"] + 1
+        email=old_student_data["email"],
+        first_name=old_student_data["first_name"],
+        last_name="updated-last-name",
+        gender=old_student_data["gender"],
+        time_spent_in_books=12312312,
     )
 
     old_id = old_student_data["id"]
@@ -85,12 +110,19 @@ def test_update_student(client: FlaskClient):
 
     assert response.status_code == 200
     assert data["id"] == old_id
-    assert data["name"] == old_student_data["name"]
-    assert data["age"] == old_student_data["age"] + 1
+    assert data["first_name"] == old_student_data["first_name"]
+    assert data["last_name"] == "updated-last-name"
+    assert data["gender"] == old_student_data["gender"]
+    assert data["time_spent_in_books"] == 12312312
 
 
 def test_update_student_not_found(client: FlaskClient):
-    updated_student = Student(name="Test", age=1)
+    updated_student = Student(
+        email="email3@gmail.com",
+        first_name="name3",
+        last_name="lastname3",
+        gender="FEMALE",
+    )
     response = client.put("/students/10", json=marshal(updated_student, student_model))
     data = json.loads(response.data)
 

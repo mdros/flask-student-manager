@@ -6,17 +6,20 @@ def create_flask_app(config_path: str) -> Flask:
 
     app.config.from_object(config_path)
 
-    from extensions.database import db
+    with app.app_context():
+        from extensions.database import db
 
-    db.init_app(app)
+        db.init_app(app)
 
-    from extensions import commands
+        db.create_all()
 
-    commands.init_app(app)
+        from extensions import commands
 
-    from apis import api
+        commands.init_app(app)
 
-    api.init_app(app)
+        from apis import api
+
+        api.init_app(app)
 
     return app
 
